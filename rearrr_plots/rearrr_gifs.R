@@ -7,7 +7,7 @@ library(ggplot2)
 # library(patchwork)
 library(gganimate)
 
-save_path <- "/Users/ludvigolsen/Documents/Programmering/readme_plots/rearrr/"
+save_path <- "/Users/ludvigolsen/Documents/Programmering/readme_plots/rearrr_plots/"
 
 #   __________________ #< 63a9770bb959ffb368eaa2d544b61319 ># __________________
 #   Rearrange examples                                                      ####
@@ -215,18 +215,89 @@ swirl3d_gif <- function(){
     theme(
       axis.title.y = ggplot2::element_text(margin = ggplot2::margin(0, 6, 0, 0)),
       axis.title.x.top = ggplot2::element_text(margin = ggplot2::margin(0, 0, 6, 0)),
-      axis.title.x.bottom = ggplot2::element_text(margin = ggplot2::margin(6, 0, 0, 0))
+      axis.title.x.bottom = ggplot2::element_text(margin = ggplot2::margin(6, 0, 0, 0)),
+      legend.position = "none"
     ) +
     transition_states(
       version, state_length = 0
     ) +
-    labs(x = "x", y = "y", color = "radius")
+    labs(x = "x", y = "y", title = "3d swirls")
 
 }
 
 swirl_gif <- swirl3d_gif()
 
-animate(swirl_gif, height = 3.5, width = 3.5, units = "in", res = 250, rewind = FALSE)
+# animate(swirl_gif, height = 3.5, width = 3.5, units = "in", res = 250, rewind = FALSE)
+#
+# anim_save(paste0(save_path, "swirl3d_example.gif"))
 
-anim_save(paste0(save_path, "swirl3d_example.gif"))
+
+##  .................. #< fb88b67e0e75773c057b9f167d1b3b46 ># ..................
+##  Formers / shapers                                                       ####
+
+
+shapers_gif <- function(){
+
+  gg_line_alpha <- .4
+  gg_base_line_size <- .3
+
+  # Create a data frame
+  xpectr::set_test_seed(10)
+
+  # Create a data frame
+  df <- data.frame(
+    "y" = runif(200)
+  )
+
+  df_hex <- hexagonalize(df, y_col = "y", x_col_name = "x", edge_col_name = NULL) %>%
+    dplyr::mutate(.former = "hexagonalize")
+  df_sq <- square(df, y_col = "y", x_col_name = "x", edge_col_name = NULL) %>%
+    dplyr::mutate(.former = "square")
+  df_circ <- circularize(df, y_col = "y", x_col_name = "x", degrees_col_name = NULL) %>%
+    dplyr::mutate(.former = "circularize")
+  df_tri <- triangularize(df, y_col = "y", x_col_name = "x", edge_col_name = NULL) %>%
+    dplyr::mutate(.former = "triangularize")
+
+  df$x <- 0
+  df$.former <- "Original"
+
+  df_collected <- dplyr::bind_rows(
+    df, df_hex, df_sq, df_circ, df_tri
+  ) %>%
+    dplyr::mutate(.former = factor(
+      .former,
+      levels = c(
+        "Original",
+        "hexagonalize",
+        "circularize",
+        "square",
+        "triangularize"
+      )
+    ))
+
+  df_collected %>%
+    ggplot(aes(x = x, y = y, color = y)) +
+    geom_point() +
+    theme_minimal(base_line_size = gg_base_line_size) +
+    scale_colour_distiller(palette = 1) +
+    theme(
+      axis.title.y = ggplot2::element_text(margin = ggplot2::margin(0, 6, 0, 0)),
+      axis.title.x.top = ggplot2::element_text(margin = ggplot2::margin(0, 0, 6, 0)),
+      axis.title.x.bottom = ggplot2::element_text(margin = ggplot2::margin(6, 0, 0, 0)),
+      legend.position = "none"
+    ) +
+    transition_states(
+      .former, state_length = 1
+    ) +
+    labs(x = "Generated x", y = "Original y", title = "Shape: {closest_state}")
+
+}
+
+shapes_gif <- shapers_gif()
+
+# animate(shapes_gif, height = 3.5, width = 3.5, units = "in", res = 250, rewind = FALSE)
+#
+# anim_save(paste0(save_path, "formers_example.gif"))
+
+
 
