@@ -299,5 +299,85 @@ shapes_gif <- shapers_gif()
 #
 # anim_save(paste0(save_path, "formers_example.gif"))
 
+mutators_gif <- function(){
 
+  gg_line_alpha <- .4
+  gg_base_line_size <- .3
 
+  # Create a data frame
+  xpectr::set_test_seed(3)
+
+  # Create a data frame
+  df <- data.frame(
+    "x" = runif(80),
+    "y" = runif(80),
+    "o" = 1,
+    "g" = rep(c(1, 2, 3, 4, 5), each = 16)
+  )
+
+  df_clustered <- cluster_groups(df, cols = c("x", "y"), group_col = "g", suffix = "")
+  df_dimmed <- df_clustered %>%
+    dplyr::group_by(g) %>%
+    dim_values(cols = c("x", "y", "o"), origin_fn = most_centered, suffix = "", origin_col_name = NULL)
+  df_rotated <- df_dimmed %>%
+    dplyr::group_by(g) %>%
+    rotate_2d(degrees = 60, x_col = "x", y_col = "y", origin_fn = most_centered,
+              suffix = "", degrees_col_name = NULL, origin_col_name = NULL)
+  df_expanded <- df_rotated %>%
+    dplyr::group_by(g) %>%
+    expand_distances(
+      cols = c("x", "y"),
+      multiplier = 2,
+      origin_fn = most_centered,
+      exponentiate = TRUE,
+      suffix = "",
+      mult_col_name = NULL,
+      origin_col_name = NULL
+    )
+  df_flipped <- df_expanded %>%
+    dplyr::group_by(g) %>%
+    flip_values(cols = c("y"), origin_fn = most_centered, origin_col_name = NULL, suffix = "")
+
+  df_collected <- dplyr::bind_rows(
+    df %>% mutate(.fn = "Original"),
+    df_clustered %>% mutate(.fn = "cluster_groups"),
+    df_dimmed %>% mutate(.fn = "dim_values"),
+    df_rotated %>% mutate(.fn = "rotate_2d"),
+    df_expanded %>% mutate(.fn = "expand_distances"),
+    df_flipped %>% mutate(.fn = "flip_values"),
+  ) %>%
+    dplyr::mutate(.fn = factor(
+      .fn,
+      levels = c(
+        "Original",
+        "cluster_groups",
+        "dim_values",
+        "rotate_2d",
+        "expand_distances",
+        "flip_values"
+      )
+    ))
+
+  df_collected %>%
+    ggplot(aes(x = x, y = y, color = factor(g), alpha = o)) +
+    geom_point() +
+    theme_minimal(base_line_size = gg_base_line_size) +
+    scale_colour_brewer(palette = "Dark2") +
+    theme(
+      axis.title.y = ggplot2::element_text(margin = ggplot2::margin(0, 6, 0, 0)),
+      axis.title.x.top = ggplot2::element_text(margin = ggplot2::margin(0, 0, 6, 0)),
+      axis.title.x.bottom = ggplot2::element_text(margin = ggplot2::margin(6, 0, 0, 0)),
+      legend.position = "none"
+    ) +
+    transition_states(
+      .fn, state_length = 1
+    ) +
+    labs(x = "x", y = "y", title = "Function: {closest_state}")
+
+}
+
+muta_gif <- mutators_gif()
+
+# animate(muta_gif, height = 3.5, width = 3.5, units = "in", res = 250, rewind = FALSE)
+#
+# anim_save(paste0(save_path, "functions_example.gif"))
